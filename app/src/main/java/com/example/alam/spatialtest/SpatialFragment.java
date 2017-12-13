@@ -1,8 +1,6 @@
 package com.example.alam.spatialtest;
 
-import android.app.Activity;
 import android.app.Fragment;
-import android.app.FragmentManager;
 import android.content.Intent;
 import android.content.SharedPreferences;
 import android.os.AsyncTask;
@@ -16,7 +14,6 @@ import android.view.ViewGroup;
 import android.widget.AdapterView;
 import android.widget.Button;
 import android.widget.GridView;
-import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -45,20 +42,20 @@ public class SpatialFragment extends Fragment {
     int score = 0;
     SharedPreferences.Editor editor;
     private int count = 0;
-    private int imageNo;
+    private int highLightCount;
     View v;
-    TextView test_title;
+    TextView title;
     private int studyStyle;
     private TimerTask timeTask;
     private static String TAG = "MainActivity";
     NoRepeatRandom nrr = new NoRepeatRandom(0, 8);
-    private GridView gridNumber;
+    private GridView gridView;
     //private ViewGroup buttonView;
     private Button start;
     private boolean startClick = false;
-    Button nextGame;
+    Button nextButton;
     int flowerNo=0,flowerScore=0;
-    LinearLayout score_layout1,score_layout2;
+    LinearLayout scoreLayout1, scoreLayout2;
     TextView flower,scoreView;
     private GridViewAdapter adapter;
     private ArrayList<GridViewItem> items;
@@ -86,25 +83,8 @@ public class SpatialFragment extends Fragment {
         v = inflater.inflate(R.layout.activity_main, container, false);
         pref = getActivity().getApplication().getSharedPreferences("MyPref", 0); // 0 - for private mode
         editor = pref.edit();
-        isFlag = pref.getBoolean("flag",false);
-        tryNo = pref.getInt("tryNo",tryNo);
-        flowerScore = pref.getInt("flowerScore",flowerScore);
-        if(isFlag)
-            gameType = pref.getInt("count",gameType);
-        if(gameType>2){
-            int showScore = flowerScore;
-            editor.putInt("flowerScore",0);
-            editor.commit();
-
-            Intent intent = new Intent(getActivity(),Result.class);
-            intent.putExtra("score",showScore);
-            startActivity(intent);
-
-        }
-        else {
-            locateView(v); //define all elements in content views
-            setAdapter(gameType);
-        }
+        locateView(v); //define all elements in content views
+        setAdapter(gameType);
         return v;
     }
     /**
@@ -117,109 +97,63 @@ public class SpatialFragment extends Fragment {
     }
 
     private void locateView(View v) {
-        gridNumber = (GridView) v.findViewById(R.id.grid_view);
-        test_title = (TextView) v.findViewById(R.id.test_title);
-        nextGame = (Button) v.findViewById(R.id.nextGame);
-        score_layout1 = (LinearLayout)v.findViewById(R.id.score1_layout);
-        score_layout2 = (LinearLayout)v.findViewById(R.id.score2_layout);
+        gridView = (GridView) v.findViewById(R.id.grid_view);
+        title = (TextView) v.findViewById(R.id.test_title);
+        nextButton = (Button) v.findViewById(R.id.nextGame);
+        scoreLayout1 = (LinearLayout)v.findViewById(R.id.score1_layout);
+        scoreLayout2 = (LinearLayout)v.findViewById(R.id.score2_layout);
         flower = (TextView) v.findViewById(R.id.flower_no);
         scoreView = (TextView) v.findViewById(R.id.score);
-        //buttonView = (LinearLayout) findViewById(R.id.fragment_button);
-        replaceButtonLayout();
+        highlightItems(studyStyle);
     }
 
-    /**
-     * set Button Start view from other xml
-     */
 
-    private void replaceButtonLayout() {
-        LayoutInflater inflater = (LayoutInflater) getActivity().getSystemService(Activity.LAYOUT_INFLATER_SERVICE);
-        View view = inflater.inflate(R.layout.fragment_button, null, false);
-        start = (Button) view.findViewById(R.id.btn_start);
-        if (start.getText().toString()
-                .equals(getResources().getString(R.string.start))) {
-            //position = currentPosition;
-            pos = currentPos;
-            setAdapter(studyStyle);
-            launchHighlightWork();
-            start.setText(getResources().getString(R.string.stop));
-
-        } else {
-            Log.i(TAG, "current position" + position);
-            currentPos = pos;
-            //currentPosition = position;
-            cancelTimerTask();
-            setAdapter(studyStyle);
-            highLight();
-            start.setText(getResources().getString(R.string.start));
-        }
-        //start.setOnClickListener(startCountingOnClick()); //set onclick event for start button
-        //buttonView.addView(view);
+    private void highlightItems(int gameType) {
+        setAdapter(gameType);
+        launchHighlightWork();
     }
 
     /**
      * Set gridview adapter
-     * @param studyCase
+     * @param level
      */
-    private void setAdapter(int studyCase) {
+    private void setAdapter(int level) {
         items = new ArrayList<GridViewItem>();
-        if (studyCase == 1) {
-            imageNo = 6;
-            gridNumber.setNumColumns(3);
+        if (level == 1) {
+            highLightCount = 6;
+            gridView.setNumColumns(3);
             maxPosition = 9;
             createListImageItems(resourceArray);
         }
-        else if (studyCase == 0) {
-            imageNo = 3;
-            gridNumber.setNumColumns(2);
+        else if (level == 0) {
+            highLightCount = 3;
+            gridView.setNumColumns(2);
             maxPosition = 4;
             createListImageItems(resourceArray2);
-        }else if (studyCase == 2) {
-            imageNo = 6;
-            gridNumber.setNumColumns(4);
+        }else if (level == 2) {
+            highLightCount = 6;
+            gridView.setNumColumns(4);
             maxPosition = 15;
             createListImageItems(resourceArray3);
         }
 
         adapter = new GridViewAdapter(getActivity(), R.layout.item_grid, items);
-        gridNumber.setAdapter(adapter);
-//        fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-
-        gridNumber.setOnItemClickListener(new AdapterView.OnItemClickListener() {
+        gridView.setAdapter(adapter);
+        gridView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
             @Override
             public void onItemClick(AdapterView<?> adapterView, View view, int pos, long l) {
                 if (startClick) {
                     clickNumber = clickNumber + 1;
                     comparePositions.add(pos);
                     boolean flag = false;
-                    if (clickNumber < imageNo) {
-//                        if (comparePositions.size() == listOfPositions.size()) {
-//                            //Toast.makeText(getActivity(), "Correct", Toast.LENGTH_SHORT).show();
-//                            for (int i = 0; i < listOfPositions.size(); i++) {
-//                                if (comparePositions.get(i).equals(listOfPositions.get(i))) {
-//                                    flag = true;
-//                                } else {
-//                                    flag = false;
-//                                    break;
-//                                }
-//
-//                            }
-//                        }
-//                ImageView imageView = (ImageView) view;
-//                if (clickNumber < 6) {
-//                    if (comparePositions.get(clickNumber - 1).equals(listOfPositions.get(clickNumber - 1))) {
-//                        view.setBackgroundColor(R.drawable.image_disp);              }
-//
-//                } else {
-//                       view.setBackgroundColor(R.drawable.image_disp_wrong);              }
+                    if (clickNumber < highLightCount) {
+
                         if (comparePositions.get(clickNumber-1).equals(listOfPositions.get(clickNumber-1))) {
                             adapter.getItem(pos).setCorrectHighLight(true);
                             adapter.notifyDataSetChanged();
                             score = score+1;
                             flower.setText(String.valueOf(score));
                             flowerScore = flowerScore+5;
-                            editor.putInt("flowerScore",flowerScore);
-                            editor.commit();
                             scoreView.setText(String.valueOf(flowerScore));
                         } else {
                             adapter.getItem(pos).setWrongHighLight(true);
@@ -227,103 +161,60 @@ public class SpatialFragment extends Fragment {
                             score = -1;
 
                         }
-                        if (score == imageNo-1) {
-                            test_title.setText("Well Done");
-                            new CountDownTimer(2000, 1000) {
-
-                                public void onTick(long millisUntilFinished) {
-
-                                }
-
-                                public void onFinish() {
-                                    nextGame.setVisibility(View.VISIBLE);
-                                    score_layout1.setVisibility(View.GONE);
-                                    score_layout2.setVisibility(View.GONE);
-                                }
-                            }.start();
+                        if (score == highLightCount -1) {
+                            title.setText("Well Done");
+                            startCounter();
 
                         }
                         else if(score == -1){
                             if(tryNo==0){
-                                test_title.setText("You completed the sequence");
-
+                                title.setText("You completed the sequence");
                             }
                             else {
-                                test_title.setText("Try Again");
+                                title.setText("Try Again");
                             }
                             startClick = false;
-                            new CountDownTimer(2000, 1000) {
-
-                                public void onTick(long millisUntilFinished) {
-
-                                }
-
-                                public void onFinish() {
-                                    nextGame.setVisibility(View.VISIBLE);
-                                    score_layout1.setVisibility(View.GONE);
-                                    score_layout2.setVisibility(View.GONE);
-                                }
-                            }.start();
+                            startCounter();
 
 
                         }
 
-                        //view.setBackgroundColor(getResources().getColor(R.color.colorPrimaryDark));
-
                     }
+
                 }
+
             }
         });
-    nextGame.setOnClickListener(new View.OnClickListener() {
+
+        nextButton.setOnClickListener(new View.OnClickListener() {
         @Override
         public void onClick(View view) {
-            if (score == imageNo-1) {
-                nextGame.setVisibility(View.VISIBLE);
-
-                score_layout1.setVisibility(View.GONE);
-                score_layout2.setVisibility(View.GONE);
-                editor.putBoolean("flag",true);
-                editor.putInt("count",gameType+1);
-                editor.commit();
-
-                FragmentManager fragmentManager = getFragmentManager();
-                fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                fragmentManager.beginTransaction().replace(R.id.frame_layout, new SpatialFragment()).commit();
-
+            if (score == highLightCount -1) {
+                nextButton.setVisibility(View.VISIBLE);
+                scoreLayout1.setVisibility(View.GONE);
+                scoreLayout2.setVisibility(View.GONE);
+                gameType++;
+                startNextLevel(gameType);
                 Toast.makeText(getActivity(), "Matched", Toast.LENGTH_SHORT).show();
 
 
             }
             else if(score == -1) {
-                nextGame.setVisibility(View.VISIBLE);
-
-                score_layout1.setVisibility(View.GONE);
-                score_layout2.setVisibility(View.GONE);
-                editor.putInt("tryNo", tryNo -1);
-                editor.putBoolean("flag", true);
-                if (gameType == 0) {
-                    editor.putInt("count", gameType);
-
-                } else {
-                    editor.putInt("count", gameType - 1);
-                }
+                nextButton.setVisibility(View.VISIBLE);
+                scoreLayout1.setVisibility(View.GONE);
+                scoreLayout2.setVisibility(View.GONE);
+                tryNo--;
+                if (gameType != 0) {
+                    gameType -- ;
+               }
                 editor.commit();
                 if (tryNo > 0) {
-
-
-                    FragmentManager fragmentManager = getFragmentManager();
-                    fragmentManager.popBackStack(null, FragmentManager.POP_BACK_STACK_INCLUSIVE);
-                    fragmentManager.beginTransaction().replace(R.id.frame_layout, new SpatialFragment()).commit();
+                    startNextLevel(gameType);
                     Toast.makeText(getActivity(), "Tries remaining  "+tryNo, Toast.LENGTH_SHORT).show();
-
-
                 }
                 else {
 
                     int showScore = flowerScore;
-                    editor.putInt("tryNo", 1);
-                    editor.putInt("flowerScore",0);
-                    editor.commit();
                     Intent intent = new Intent(getActivity(),Result.class);
                     intent.putExtra("score",showScore);
                     startActivity(intent);
@@ -331,6 +222,33 @@ public class SpatialFragment extends Fragment {
             }
         }
     });
+    }
+    public void startCounter(){
+        new CountDownTimer(2000, 1000) {
+
+            public void onTick(long millisUntilFinished) {
+
+            }
+
+            public void onFinish() {
+
+                nextButton.setVisibility(View.VISIBLE);
+                scoreLayout1.setVisibility(View.GONE);
+                scoreLayout2.setVisibility(View.GONE);
+            }
+        }.start();
+
+    }
+    public void startNextLevel(int gameLevel){
+        title.setText("Tap the flowers in the order they lit up");
+        nextButton.setVisibility(View.INVISIBLE);
+        score = 0;
+        clickNumber = 0;
+        count = 0;
+        startClick = false;
+        listOfPositions = new ArrayList<>();
+        comparePositions = new ArrayList<>();
+        setAdapter(gameLevel);
     }
 
 
@@ -351,7 +269,6 @@ public class SpatialFragment extends Fragment {
      * Highlight gridview items method
      */
     private void highLight() {
-
         if (count == 0 ) {
             //set item at position 0 highlight
             //update adapter after that
@@ -359,14 +276,15 @@ public class SpatialFragment extends Fragment {
             listOfPositions.add(pos);
             adapter.getItem(pos).setHighLight(true);
             adapter.notifyDataSetChanged();
-
-
         }
-        else if (count < imageNo) {
+        else if (count < highLightCount) {
             // highlight current item and not highlight previous item
             //and update adapter after that
-
-            adapter.getItem(pos).setHighLight(false);
+            try{
+                adapter.getItem(pos).setHighLight(false);
+            }catch (IndexOutOfBoundsException ie){
+                ie.printStackTrace();
+            }
             pos = randInt(0,maxPosition-1);
             if(listOfPositions.contains(pos)){
                 while (listOfPositions.contains(pos)){
@@ -376,7 +294,7 @@ public class SpatialFragment extends Fragment {
             listOfPositions.add(pos);
             adapter.getItem(pos).setHighLight(true);
             adapter.notifyDataSetChanged();
-            if(count == imageNo-1){
+            if(count == highLightCount -1){
                 new CountDownTimer(2000, 1000) {
 
                     public void onTick(long millisUntilFinished) {
@@ -387,9 +305,9 @@ public class SpatialFragment extends Fragment {
                         adapter.getItem(pos).setHighLight(false);
                         adapter.notifyDataSetChanged();
                         startClick = true;
-                        test_title.setText("Tap the flowers in the order they lit up");
-                        score_layout1.setVisibility(View.VISIBLE);
-                        score_layout2.setVisibility(View.VISIBLE);
+                        title.setText("Tap the flowers in the order they lit up");
+                        scoreLayout1.setVisibility(View.VISIBLE);
+                        scoreLayout2.setVisibility(View.VISIBLE);
                         flower.setText("0");
                         scoreView.setText(String.valueOf(flowerScore));
                     }
@@ -406,9 +324,6 @@ public class SpatialFragment extends Fragment {
             startClick = true;
             //cancelTimerTask();
             count = 0;
-
-//            position = -1;
-//            currentPosition = -1;
             start.setText(getResources().getString(R.string.start));
 
         }
@@ -447,10 +362,7 @@ public class SpatialFragment extends Fragment {
 
         @Override
         protected Void doInBackground(Void... params) {
-//            if (position < maxPosition) {
-//                publishProgress(Integer.valueOf(position));
-//            }
-            if (count< imageNo) {
+            if (count< highLightCount) {
                 publishProgress(Integer.valueOf(count));
             }
             Log.i(TAG, "do in background");
@@ -460,19 +372,14 @@ public class SpatialFragment extends Fragment {
         @Override
         protected void onPostExecute(Void result) {
             Log.i(TAG, "onPostExecute");
-//            if (position < maxPosition) {
-//                highLight();
-//            }
-            if (count < imageNo) {
+            if (count < highLightCount) {
                 highLight();
             }
         }
 
         @Override
         protected void onProgressUpdate(Integer... values) {
-//            if (position < maxPosition) {
-//                position = position + 1;
-            if (count < imageNo) {
+            if (count < highLightCount) {
                 count = count +1;
             } else {
 
@@ -480,36 +387,6 @@ public class SpatialFragment extends Fragment {
             Log.d(TAG, "pos " + position);
             Log.i(TAG, "onProgressUpdate");
         }
-    }
-
-    /**
-     * Start button event
-     * @return
-     */
-    private View.OnClickListener startCountingOnClick() {
-        return new View.OnClickListener() {
-
-            @Override
-            public void onClick(View v) {
-                if (start.getText().toString()
-                        .equals(getResources().getString(R.string.start))) {
-                    //position = currentPosition;
-                    pos = currentPos;
-                    setAdapter(studyStyle);
-                    launchHighlightWork();
-                    start.setText(getResources().getString(R.string.stop));
-
-                } else {
-                    Log.i(TAG, "current position" + position);
-                    currentPos = pos;
-                    //currentPosition = position;
-                    cancelTimerTask();
-                    setAdapter(studyStyle);
-                    highLight();
-                    start.setText(getResources().getString(R.string.start));
-                }
-            }
-        };
     }
 
     /**
