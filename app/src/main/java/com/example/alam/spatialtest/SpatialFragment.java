@@ -31,7 +31,7 @@ public class SpatialFragment extends Fragment {
 
     private int position = -1;
     private int pos;
-    int tryNo = 1;
+    int tryNo = 2;
     boolean isFlag;
     private int clickNumber = 0;
     private int currentPos;
@@ -48,7 +48,6 @@ public class SpatialFragment extends Fragment {
     private int studyStyle;
     private TimerTask timeTask;
     private static String TAG = "MainActivity";
-    NoRepeatRandom nrr = new NoRepeatRandom(0, 8);
     private GridView gridView;
     //private ViewGroup buttonView;
     private Button start;
@@ -90,11 +89,16 @@ public class SpatialFragment extends Fragment {
     /**
      * Canceling highlight work when app is not visible
      */
-    @Override
-    public void onPause() {
-        super.onPause();
-        cancelTimerTask();
-    }
+//    @Override
+//    public void onPause() {
+//        super.onPause();
+//        cancelTimerTask();
+//    }
+//    @Override
+//    public void onResume() {
+//        super.onResume();
+//        runTimerTask();
+//    }
 
     private void locateView(View v) {
         gridView = (GridView) v.findViewById(R.id.grid_view);
@@ -193,9 +197,17 @@ public class SpatialFragment extends Fragment {
                 nextButton.setVisibility(View.VISIBLE);
                 scoreLayout1.setVisibility(View.GONE);
                 scoreLayout2.setVisibility(View.GONE);
-                gameType++;
-                startNextLevel(gameType);
-                Toast.makeText(getActivity(), "Matched", Toast.LENGTH_SHORT).show();
+                if(gameType<2) {
+                    gameType++;
+                    startNextLevel(gameType);
+                    Toast.makeText(getActivity(), "Matched", Toast.LENGTH_SHORT).show();
+                }
+                else {
+                    int showScore = flowerScore;
+                    Intent intent = new Intent(getActivity(),Result.class);
+                    intent.putExtra("score",showScore);
+                    startActivity(intent);
+                }
 
 
             }
@@ -392,11 +404,14 @@ public class SpatialFragment extends Fragment {
     /**
      * Canceling the time task, so stopping highlight.
      */
-    private void cancelTimerTask() {
-        if (timeTask != null) {
-            timeTask.cancel();
-        }
-    }
+//    private void cancelTimerTask() {
+//        if (timeTask != null) {
+//            timeTask.cancel();
+//        }
+//    }
+//    private void runTimerTask() {
+//       setAdapter(gameType);
+//    }
     public static int randInt(int min, int max) {
 
         // NOTE: Usually this should be a field rather than a method
